@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Trading Simulator</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #38bdf8;
+}
+
+/* Ảnh Monopoly */
+.monopoly {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.monopoly img {
+    width: 120px;
+    border-radius: 50%;
+    border: 3px solid #38bdf8;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.card {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.actions {
+    text-align: center;
+}
+
+button {
+    padding: 12px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.buy { background: #22c55e; color: white; }
+.sell { background: #ef4444; color: white; }
+.next { background: #3b82f6; color: white; }
+.reset { background: #f59e0b; color: white; display: none; }
+
+.log {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.status {
+    text-align: center;
+    font-size: 20px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.win { color: #22c55e; }
+.lose { color: #ef4444; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📈 Trading Simulator</h1>
+
+    <!-- Hình ông già Monopoly -->
+    <div class="monopoly">
+        <img src="https://upload.wikimedia.org/wikipedia/en/0/0f/Rich_Uncle_Pennybags.png">
+        <p>💰 "Hãy đầu tư khôn ngoan!"</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">Tiền<br><b id="money"></b></div>
+        <div class="card">Giá<br><b id="price"></b></div>
+        <div class="card">Cổ phiếu<br><b id="stock"></b></div>
+        <div class="card">Tổng<br><b id="total"></b></div>
+    </div>
+
+    <div class="actions">
+        <button class="buy" onclick="buy()">Mua</button>
+        <button class="sell" onclick="sell()">Bán</button>
+        <button class="next" id="nextBtn" onclick="nextTurn()">Next</button>
+        <br>
+        <button class="reset" id="resetBtn" onclick="resetGame()">🔄 Chơi lại</button>
+    </div>
+
+    <div class="log" id="log"></div>
+    <div id="status" class="status"></div>
+</div>
+
+<script>
+let money, price, stock, gameOver;
+let mustBuy = 0; // số cổ phiếu cần mua
+
+function initGame() {
+    money = 1000;
+    price = 10;
+    stock = 0;
+    gameOver = false;
+    mustBuy = 0;
+
+    document.getElementById("resetBtn").style.display = "none";
+    document.getElementById("status").innerText = "";
+    document.getElementById("nextBtn").disabled = false;
+
+    log("Bắt đầu game!");
+    updateUI();
+}
+
+function totalAssets() {
+    return money + stock * price;
+}
+
+function updateUI() {
+    document.getElementById("money").innerText = money + "$";
+    document.getElementById("price").innerText = price + "$";
+    document.getElementById("stock").innerText = stock;
+    document.getElementById("total").innerText = totalAssets() + "$";
+    checkWinLose();
+}
+
+function buy() {
+    if (gameOver) return;
+
+    if (money >= price) {
+        money -= price;
+        stock++;
+
+        if (mustBuy > 0) {
+            mustBuy--;
+            log("Mua cổ phiếu (" + (10 - mustBuy) + "/10)");
+        } else {
+            log("Mua cổ phiếu");
+        }
+
+        if (mustBuy === 0) {
+            document.getElementById("nextBtn").disabled = false;
+        }
+
+    } else {
+        log("Không đủ tiền!");
+    }
+    updateUI();
+}
+
+function sell() {
+    if (gameOver) return;
+
+    if (stock > 0) {
+        money += price;
+        stock--;
+        log("Bán cổ phiếu");
+    } else {
+        log("Không có cổ phiếu!");
+    }
+    updateUI();
+}
+
+function nextTurn() {
+    if (gameOver) return;
+
+    // bắt buộc mua 10 cổ phiếu
+    mustBuy = 10;
+    document.getElementById("nextBtn").disabled = true;
+
+    let change = Math.random() * 10 - 5;
+    price = Math.max(1, Math.round(price + change));
+
+    log("📊 Giá thay đổi! Bạn phải mua 10 cổ phiếu để tiếp tục.");
+    updateUI();
+}
+
+function log(message) {
+    document.getElementById("log").innerText = message;
+}
+
+function checkWinLose() {
+    let total = totalAssets();
+    let status = document.getElementById("status");
+
+    if (total >= 1500) {
+        status.innerText = "🏆 YOU WIN!";
+        status.className = "status win";
+        gameOver = true;
+        showReset();
+    } 
+    else if (total <= 500 || (money === 0 && stock === 0)) {
+        status.innerText = "💀 GAME OVER!";
+        status.className = "status lose";
+        gameOver = true;
+        showReset();
+    }
+}
+
+function showReset() {
+    document.getElementById("resetBtn").style.display = "inline-block";
+}
+
+function resetGame() {
+    initGame();
+}
+
+initGame();
+</script>
+
+</body>
+</html>
